@@ -27,3 +27,36 @@ fs -rm -f -r output;
 -- 
 --  >>> Escriba su respuesta a partir de este punto <<<
 -- 
+%load_ext bigdata
+%pig_start
+%timeout 300
+
+%%pig
+fs -put truck_event_text_partition.csv
+
+%%pig
+--
+-- Carga el archivo desde el disco duro
+--
+u = LOAD 'truck_event_text_partition.csv' USING PigStorage(',')
+    AS (driverId:INT,
+        truckId :INT,
+        eventTime:CHARARRAY);
+    
+DUMP u;
+
+%%pig
+y = ORDER z BY $0,$1,$2;
+DUMP y;
+
+%%pig
+STORE y INTO 'output' USING PigStorage(',');
+
+%%pig
+fs -get output/ .
+
+!hadoop fs -ls output/*
+
+!hadoop fs -cat output/part-r-00000
+
+%pig_quit
