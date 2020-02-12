@@ -40,3 +40,51 @@ u = LOAD 'data.csv' USING PigStorage(',')
 --
 -- >>> Escriba su respuesta a partir de este punto <<<
 --
+%load_ext bigdata
+%pig_start
+%timeout 300
+%%pig
+fs -put data.csv
+
+%%pig
+u = LOAD 'data.csv' USING PigStorage(',') 
+    AS (id:int, 
+        firstname:CHARARRAY, 
+        surname:CHARARRAY, 
+        birthday:CHARARRAY, 
+        color:CHARARRAY, 
+        quantity:INT);
+    
+r = FOREACH u GENERATE $3;
+DUMP r;
+
+%%pig
+a = FOREACH r GENERATE $0, 
+CASE GetMonth(ToDate(birthday, 'yyyy-MM-dd'))
+    WHEN 1 THEN 'ene'
+    WHEN 2 THEN 'feb'
+    WHEN 3 THEN 'mar'
+    WHEN 4 THEN 'abr'
+    WHEN 5 THEN 'may'
+    WHEN 6 THEN 'jun'
+    WHEN 7 THEN 'jul'
+    WHEN 8 THEN 'ago'
+    WHEN 9 THEN 'sep'
+    WHEN 10 THEN 'oct'
+    WHEN 11 THEN 'nov'
+    ELSE 'dic'
+    END,
+SUBSTRING($0, 5, 7), GetMonth(ToDate($0, 'yyyy-MM-dd'));
+DUMP a;
+
+%%pig
+STORE a INTO 'output' USING PigStorage(',');
+
+%%pig
+fs -get output/ .
+
+!hadoop fs -ls output/*
+
+!hadoop fs -cat output/part-m-00000
+
+%pig_quit
