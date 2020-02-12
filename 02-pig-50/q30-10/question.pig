@@ -40,4 +40,55 @@ u = LOAD 'data.csv' USING PigStorage(',')
 --
 -- >>> Escriba su respuesta a partir de este punto <<<
 --
+%load_ext bigdata
+%pig_start
+%timeout 300
+%%pig
+fs -put data.csv
+
+%%pig
+u = LOAD 'data.csv' USING PigStorage(',') 
+    AS (id:int, 
+        firstname:CHARARRAY, 
+        surname:CHARARRAY, 
+        birthday:CHARARRAY, 
+        color:CHARARRAY, 
+        quantity:INT);
+    
+r = FOREACH u GENERATE $3;
+DUMP r;
+
+%%pig
+a = FOREACH r GENERATE $0, SUBSTRING($0, 8, 10), GetDay(ToDate($0, 'yyyy-MM-dd')), 
+CASE ToString(ToDate($0, 'yyyy-MM-dd'), 'EEE') 
+    WHEN 'Mon' THEN 'lun'
+    WHEN 'Tue' THEN 'mar'
+    WHEN 'Wed' THEN 'mie'
+    WHEN 'Thu' THEN 'jue'
+    WHEN 'Fri' THEN 'vie'
+    WHEN 'Sat' THEN 'sab'
+    WHEN 'Sun' THEN 'dom'
+    END,
+CASE ToString(ToDate($0, 'yyyy-MM-dd'), 'EEE') 
+    WHEN 'Mon' THEN 'lunes'
+    WHEN 'Tue' THEN 'martes'
+    WHEN 'Wed' THEN 'miercoles'
+    WHEN 'Thu' THEN 'jueves'
+    WHEN 'Fri' THEN 'viernes'
+    WHEN 'Sat' THEN 'sabado'
+    WHEN 'Sun' THEN 'domingo'
+    END; 
+DUMP a;
+
+%%pig
+STORE a INTO 'output' USING PigStorage(',');
+
+%%pig
+fs -get output/ .
+
+!hadoop fs -ls output/*
+
+!hadoop fs -cat output/part-m-00000
+
+%pig_quit
 
